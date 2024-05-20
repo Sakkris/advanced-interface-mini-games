@@ -1,4 +1,9 @@
 import pygame
+import cv2
+import cvzone
+from cvzone.HandTrackingModule import HandDetector
+import numpy as np
+
 pygame.init()
 
 import constants
@@ -7,6 +12,12 @@ import ball
 
 pygame.display.set_caption("Pong")
 
+# set capture camera to default
+cap = cv2.VideoCapture(0)
+
+detector = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
+
+
 def draw(window, paddles, ball_instance, left_score, right_score):
     window.fill(constants.BACKGROUND_COLOR)
 
@@ -14,21 +25,23 @@ def draw(window, paddles, ball_instance, left_score, right_score):
     right_score_text = constants.TEXT_FONT.render(f"{right_score}", 1, constants.WHITE_COLOR)
 
     window.blit(left_score_text, (constants.WINDOW_WIDTH // 4 - left_score_text.get_width() // 2, 20))
-    window.blit(right_score_text, (constants.WINDOW_WIDTH * (3/4) - right_score_text.get_width() // 2, 20))
+    window.blit(right_score_text, (constants.WINDOW_WIDTH * (3 / 4) - right_score_text.get_width() // 2, 20))
 
     for paddle in paddles:
         paddle.draw(constants.WINDOW)
 
     # middle dashed line
-    for i in range(10, constants.WINDOW_HEIGHT, constants.WINDOW_HEIGHT//20):
+    for i in range(10, constants.WINDOW_HEIGHT, constants.WINDOW_HEIGHT // 20):
         if i % 2 == 1:
             continue
 
-        pygame.draw.rect(window, constants.WHITE_COLOR, (constants.WINDOW_WIDTH//2 - 2, i, 4, constants.WINDOW_HEIGHT//20))
+        pygame.draw.rect(window, constants.WHITE_COLOR,
+                         (constants.WINDOW_WIDTH // 2 - 2, i, 4, constants.WINDOW_HEIGHT // 20))
 
     ball_instance.draw(window)
 
     pygame.display.update()
+
 
 def handle_collision(ball_instance, left_paddle, right_paddle):
     # celling collision
@@ -62,29 +75,54 @@ def handle_collision(ball_instance, left_paddle, right_paddle):
 
 
 def handle_paddle_movement(keys, left_paddle, right_paddle):
+    # hand detection (for now local with 2 hands)
+    success, img = cap.read()
+    hands, img = detector.findHands(img, draw=True, flipType=True)
+
+    if hands:
+        for hand in hands:
+            # get final position
+            _, y, _, _ = hand["bbox"]
+            y -= left_paddle.height // 2
+
+            # check for boundaries
+            y = np.clip(y, 0, constants.WINDOW_HEIGHT)
+
+            # check hand
+            if hand["type"] == "Left":
+                left_paddle.y = y
+            if hand["type"] == "Right":
+                right_paddle.y = y
+
+    cv2.imshow("Hand Position Debug", img)
+
     if keys[pygame.K_ESCAPE]:
         pygame.quit()
 
     if keys[pygame.K_w]:
         left_paddle.move(up=True)
-    
+
     if keys[pygame.K_s]:
         left_paddle.move(up=False)
 
     if keys[pygame.K_UP]:
         right_paddle.move(up=True)
-    
+
     if keys[pygame.K_DOWN]:
         right_paddle.move(up=False)
+
 
 def main():
     run = True
     clock = pygame.time.Clock()
 
-    left_paddle = paddle.Paddle(10, constants.WINDOW_HEIGHT//2 - paddle.PADDLE_HEIGHT//2, paddle.PADDLE_WIDTH, paddle.PADDLE_HEIGHT)
-    right_paddle = paddle.Paddle(constants.WINDOW_WIDTH - 10 - paddle.PADDLE_WIDTH, constants.WINDOW_HEIGHT//2 - paddle.PADDLE_HEIGHT//2, paddle.PADDLE_WIDTH, paddle.PADDLE_HEIGHT)
-    
-    ball_instance = ball.Ball(constants.WINDOW_WIDTH//2, constants.WINDOW_HEIGHT//2, ball.BALL_RADIUS)
+    left_paddle = paddle.Paddle(10, constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
+                                paddle.PADDLE_HEIGHT)
+    right_paddle = paddle.Paddle(constants.WINDOW_WIDTH - 10 - paddle.PADDLE_WIDTH,
+                                 constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
+                                 paddle.PADDLE_HEIGHT)
+
+    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS)
 
     left_score = 0
     right_score = 0
@@ -97,7 +135,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 break
-        
+
         keys = pygame.key.get_pressed()
         handle_paddle_movement(keys, left_paddle, right_paddle)
 
@@ -125,8 +163,11 @@ def main():
             draw(constants.WINDOW, [left_paddle, right_paddle], ball_instance, left_score, right_score)
 
             text = constants.TEXT_FONT.render(win_text, 1, constants.WHITE_COLOR)
-            pygame.draw.rect(constants.WINDOW, constants.BACKGROUND_COLOR, (constants.WINDOW_WIDTH//2 - text.get_width() // 2, constants.WINDOW_HEIGHT // 2 - text.get_height() // 2, text.get_width() , text.get_height()))
-            constants.WINDOW.blit(text, (constants.WINDOW_WIDTH // 2 - text.get_width() // 2, constants.WINDOW_HEIGHT // 2 - text.get_height() // 2))
+            pygame.draw.rect(constants.WINDOW, constants.BACKGROUND_COLOR, (
+            constants.WINDOW_WIDTH // 2 - text.get_width() // 2, constants.WINDOW_HEIGHT // 2 - text.get_height() // 2,
+            text.get_width(), text.get_height()))
+            constants.WINDOW.blit(text, (
+            constants.WINDOW_WIDTH // 2 - text.get_width() // 2, constants.WINDOW_HEIGHT // 2 - text.get_height() // 2))
 
             pygame.display.update()
             pygame.time.delay(5000)
@@ -138,6 +179,7 @@ def main():
             right_paddle.reset()
 
     pygame.quit()
+
 
 if __name__ == '__main__':
     main()
