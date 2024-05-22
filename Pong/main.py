@@ -30,7 +30,7 @@ class Paddles:
 
 paddles: Paddles
 balls = []
-
+number_of_bounces = 0
 
 def draw():
     constants.WINDOW.fill(constants.BACKGROUND_COLOR)
@@ -78,6 +78,10 @@ def handle_collision(ball_instance):
 
 
 def ball_collided_with_paddle(ball_instance: ball.Ball, paddle_instance):
+    global number_of_bounces
+
+    number_of_bounces += 1
+
     ball_instance.x_velocity *= -1
 
     middle_y = paddle_instance.y + paddle_instance.height / 2
@@ -172,7 +176,7 @@ def setup_game(dificulty_settings):
     balls.append(ball_instance)
 
 
-def reset_game():
+def reset_game(dificulty_settings):
     global left_score
     global right_score
     
@@ -180,8 +184,7 @@ def reset_game():
     right_score = 0
 
     balls.clear()
-    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS)
-    balls.append(ball_instance)
+    spawn_ball(dificulty_settings)
 
     paddles.left.reset()
     paddles.right.reset()
@@ -196,9 +199,22 @@ def read_game_settings(dificulty):
     return dificulty_settings
 
 
+def spawn_ball(dificulty_settings):
+    global balls
+
+    if (len(balls) == dificulty_settings['max_balls']):
+        return
+
+    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS,
+                              dificulty_settings['ball_starting_speed'], dificulty_settings['ball_max_speed'], dificulty_settings['ball_speed_modifier'])
+
+    balls.append(ball_instance)
+
+
 def main():
     global left_score
     global right_score
+    global number_of_bounces
 
     run = True
     clock = pygame.time.Clock()
@@ -209,6 +225,11 @@ def main():
 
     while run:
         clock.tick(constants.FPS)
+
+        if (number_of_bounces > 5):
+            spawn_ball(dificulty_settings)
+            number_of_bounces = 0
+
         draw()
 
         for event in pygame.event.get():
@@ -251,7 +272,7 @@ def main():
 
             handle_player_win(win_text)
             
-            reset_game()
+            reset_game(dificulty_settings)
             
     pygame.quit()
 
