@@ -1,0 +1,19 @@
+dificulties:
+  hard:
+    paddle_speed: 10
+    ball_starting_speed: 5
+    ball_max_speed: 15
+    ball_speed_modifier: 2
+    max_balls: 3
+  medium:
+    paddle_speed: 7
+    ball_starting_speed: 3
+    ball_max_speed: 10
+    ball_speed_modifier: 1
+    max_balls: 2
+  easy:
+    paddle_speed: 4
+    ball_starting_speed: 3
+    ball_max_speed: 5
+    ball_speed_modifier: 0.5
+    max_balls: 1

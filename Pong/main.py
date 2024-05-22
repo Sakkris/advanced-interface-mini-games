@@ -4,6 +4,8 @@ import cvzone
 from cvzone.HandTrackingModule import HandDetector
 from dataclasses import dataclass
 import numpy as np
+import yaml
+import io
 
 pygame.init()
 
@@ -28,6 +30,7 @@ class Paddles:
 
 paddles: Paddles
 balls = []
+
 
 def draw():
     constants.WINDOW.fill(constants.BACKGROUND_COLOR)
@@ -74,15 +77,16 @@ def handle_collision(ball_instance):
                 ball_collided_with_paddle(ball_instance, paddles.right)
 
 
-def ball_collided_with_paddle(ball_instance, paddle_instance):
+def ball_collided_with_paddle(ball_instance: ball.Ball, paddle_instance):
     ball_instance.x_velocity *= -1
 
     middle_y = paddle_instance.y + paddle_instance.height / 2
     difference_in_y = middle_y - ball_instance.y
-    reduction_factor = (paddle_instance.height / 2) / ball_instance.MAX_VELOCITY
+    reduction_factor = (paddle_instance.height / 2) / ball_instance.max_velocity
     y_velocity = difference_in_y / reduction_factor
     ball_instance.y_velocity = -1 * y_velocity
 
+    ball_instance.increase_speed()
 
 
 def handle_paddle_movement(keys):
@@ -149,20 +153,21 @@ def handle_player_win(win_text, ):
     pygame.time.delay(5000)
 
 
-def setup_game():
+def setup_game(dificulty_settings):
     global paddles
     global balls
 
     left_paddle = paddle.Paddle(10, constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
-                                paddle.PADDLE_HEIGHT)
+                                paddle.PADDLE_HEIGHT, dificulty_settings['paddle_speed'])
     
     right_paddle = paddle.Paddle(constants.WINDOW_WIDTH - 10 - paddle.PADDLE_WIDTH,
                                  constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
-                                 paddle.PADDLE_HEIGHT)
+                                 paddle.PADDLE_HEIGHT, dificulty_settings['paddle_speed'])
     
     paddles = Paddles(left = left_paddle, right = right_paddle)
 
-    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS)
+    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS,
+                              dificulty_settings['ball_starting_speed'], dificulty_settings['ball_max_speed'], dificulty_settings['ball_speed_modifier'])
 
     balls.append(ball_instance)
 
@@ -182,6 +187,15 @@ def reset_game():
     paddles.right.reset()
 
 
+def read_game_settings(dificulty):
+    with io.open("game_settings.yaml", "r") as stream:
+        data = yaml.safe_load(stream)
+    
+    dificulty_settings = data['dificulties'][dificulty]
+
+    return dificulty_settings
+
+
 def main():
     global left_score
     global right_score
@@ -189,7 +203,9 @@ def main():
     run = True
     clock = pygame.time.Clock()
 
-    setup_game()
+    dificulty_settings = read_game_settings("hard")
+
+    setup_game(dificulty_settings)
 
     while run:
         clock.tick(constants.FPS)
@@ -199,7 +215,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 break
-
+        
         handle_input()
         
         for ball in balls:
@@ -208,10 +224,18 @@ def main():
         
             if ball.x < 0:
                 right_score += 1
-                ball.reset()
+
+                if len(balls) > 1:
+                    balls.remove(ball)
+                else:
+                    ball.reset()
             elif ball.x > constants.WINDOW_WIDTH:
                 left_score += 1
-                ball.reset()
+
+                if len(balls) > 1:
+                    balls.remove(ball)
+                else:
+                    ball.reset()
 
         won = False
 
