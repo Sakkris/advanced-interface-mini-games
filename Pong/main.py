@@ -2,6 +2,7 @@ import pygame
 import cv2
 import cvzone
 from cvzone.HandTrackingModule import HandDetector
+from dataclasses import dataclass
 import numpy as np
 
 pygame.init()
@@ -20,33 +21,41 @@ detector = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detecti
 left_score = 0
 right_score = 0
 
+@dataclass
+class Paddles:
+    left: paddle.Paddle
+    right: paddle.Paddle
 
-def draw(window, paddles, ball_instance):
-    window.fill(constants.BACKGROUND_COLOR)
+paddles: Paddles
+balls = []
+
+def draw():
+    constants.WINDOW.fill(constants.BACKGROUND_COLOR)
 
     left_score_text = constants.TEXT_FONT.render(f"{left_score}", 1, constants.WHITE_COLOR)
     right_score_text = constants.TEXT_FONT.render(f"{right_score}", 1, constants.WHITE_COLOR)
 
-    window.blit(left_score_text, (constants.WINDOW_WIDTH // 4 - left_score_text.get_width() // 2, 20))
-    window.blit(right_score_text, (constants.WINDOW_WIDTH * (3 / 4) - right_score_text.get_width() // 2, 20))
+    constants.WINDOW.blit(left_score_text, (constants.WINDOW_WIDTH // 4 - left_score_text.get_width() // 2, 20))
+    constants.WINDOW.blit(right_score_text, (constants.WINDOW_WIDTH * (3 / 4) - right_score_text.get_width() // 2, 20))
 
-    for paddle in paddles:
-        paddle.draw(constants.WINDOW)
+    paddles.left.draw(constants.WINDOW)
+    paddles.right.draw(constants.WINDOW)
 
     # middle dashed line
     for i in range(10, constants.WINDOW_HEIGHT, constants.WINDOW_HEIGHT // 20):
         if i % 2 == 1:
             continue
 
-        pygame.draw.rect(window, constants.WHITE_COLOR,
+        pygame.draw.rect(constants.WINDOW, constants.WHITE_COLOR,
                          (constants.WINDOW_WIDTH // 2 - 2, i, 4, constants.WINDOW_HEIGHT // 20))
-
-    ball_instance.draw(window)
+        
+    for ball in balls:
+        ball.draw(constants.WINDOW)
 
     pygame.display.update()
 
 
-def handle_collision(ball_instance, left_paddle, right_paddle):
+def handle_collision(ball_instance):
     # celling collision
     if ball_instance.y + ball_instance.radius >= constants.WINDOW_HEIGHT:
         ball_instance.y_velocity *= -1
@@ -55,14 +64,14 @@ def handle_collision(ball_instance, left_paddle, right_paddle):
 
     if ball_instance.x_velocity < 0:
         # left paddle collision
-        if ball_instance.y >= left_paddle.y and ball_instance.y <= left_paddle.y + left_paddle.height:
-            if ball_instance.x - ball_instance.radius <= left_paddle.x + left_paddle.width:
-                ball_collided_with_paddle(ball_instance, left_paddle)
+        if ball_instance.y >= paddles.left.y and ball_instance.y <= paddles.left.y + paddles.left.height:
+            if ball_instance.x - ball_instance.radius <= paddles.left.x + paddles.left.width:
+                ball_collided_with_paddle(ball_instance, paddles.left)
     else:
         # right paddle collision
-        if ball_instance.y >= right_paddle.y and ball_instance.y <= right_paddle.y + right_paddle.height:
-            if ball_instance.x + ball_instance.radius >= right_paddle.x:
-                ball_collided_with_paddle(ball_instance, right_paddle)
+        if ball_instance.y >= paddles.right.y and ball_instance.y <= paddles.right.y + paddles.right.height:
+            if ball_instance.x + ball_instance.radius >= paddles.right.x:
+                ball_collided_with_paddle(ball_instance, paddles.right)
 
 
 def ball_collided_with_paddle(ball_instance, paddle_instance):
@@ -76,12 +85,12 @@ def ball_collided_with_paddle(ball_instance, paddle_instance):
 
 
 
-def handle_paddle_movement(keys, left_paddle, right_paddle):
-    handle_paddle_movement_hands(left_paddle, right_paddle)
-    handle_paddle_movement_keyboard(keys, left_paddle, right_paddle)
+def handle_paddle_movement(keys):
+    handle_paddle_movement_hands()
+    handle_paddle_movement_keyboard(keys)
 
 
-def handle_paddle_movement_hands(left_paddle, right_paddle):
+def handle_paddle_movement_hands():
     # hand detection (for now local with 2 hands)
     success, img = cap.read()
     hands, img = detector.findHands(img, draw=True, flipType=True)
@@ -90,41 +99,41 @@ def handle_paddle_movement_hands(left_paddle, right_paddle):
         for hand in hands:
             # get final position
             _, y, _, _ = hand["bbox"]
-            y -= left_paddle.height // 2
+            y -= paddles.left.height // 2
 
             # check for boundaries
             y = np.clip(y, 0, constants.WINDOW_HEIGHT)
 
             # check hand
             if hand["type"] == "Left":
-                left_paddle.y = y
+                paddles.left.y = y
             if hand["type"] == "Right":
-                right_paddle.y = y
+                paddles.right.y = y
 
     cv2.imshow("Hand Position Debug", img)
 
 
-def handle_paddle_movement_keyboard(keys, left_paddle, right_paddle):
+def handle_paddle_movement_keyboard(keys):
     if keys[pygame.K_w]:
-        left_paddle.move(up=True)
+        paddles.left.move(up=True)
 
     if keys[pygame.K_s]:
-        left_paddle.move(up=False)
+        paddles.left.move(up=False)
 
     if keys[pygame.K_UP]:
-        right_paddle.move(up=True)
+        paddles.right.move(up=True)
 
     if keys[pygame.K_DOWN]:
-        right_paddle.move(up=False)
+        paddles.right.move(up=False)
 
 
-def handle_input(left_paddle, right_paddle):
+def handle_input():
     keys = pygame.key.get_pressed()
         
     if keys[pygame.K_ESCAPE]:
         pygame.quit()
 
-    handle_paddle_movement(keys, left_paddle, right_paddle)
+    handle_paddle_movement(keys)
 
 
 def handle_player_win(win_text, ):
@@ -140,15 +149,37 @@ def handle_player_win(win_text, ):
     pygame.time.delay(5000)
 
 
-def reset_game(ball_instance, left_paddle, right_paddle):
+def setup_game():
+    global paddles
+    global balls
+
+    left_paddle = paddle.Paddle(10, constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
+                                paddle.PADDLE_HEIGHT)
+    
+    right_paddle = paddle.Paddle(constants.WINDOW_WIDTH - 10 - paddle.PADDLE_WIDTH,
+                                 constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
+                                 paddle.PADDLE_HEIGHT)
+    
+    paddles = Paddles(left = left_paddle, right = right_paddle)
+
+    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS)
+
+    balls.append(ball_instance)
+
+
+def reset_game():
     global left_score
     global right_score
     
     left_score = 0
     right_score = 0
-    ball_instance.reset()
-    left_paddle.reset()
-    right_paddle.reset()
+
+    balls.clear()
+    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS)
+    balls.append(ball_instance)
+
+    paddles.left.reset()
+    paddles.right.reset()
 
 
 def main():
@@ -158,36 +189,29 @@ def main():
     run = True
     clock = pygame.time.Clock()
 
-    left_paddle = paddle.Paddle(10, constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
-                                paddle.PADDLE_HEIGHT)
-    
-    right_paddle = paddle.Paddle(constants.WINDOW_WIDTH - 10 - paddle.PADDLE_WIDTH,
-                                 constants.WINDOW_HEIGHT // 2 - paddle.PADDLE_HEIGHT // 2, paddle.PADDLE_WIDTH,
-                                 paddle.PADDLE_HEIGHT)
-
-    ball_instance = ball.Ball(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2, ball.BALL_RADIUS)
+    setup_game()
 
     while run:
         clock.tick(constants.FPS)
-        draw(constants.WINDOW, [left_paddle, right_paddle], ball_instance)
+        draw()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 break
 
-        handle_input(left_paddle, right_paddle)
+        handle_input()
         
-        ball_instance.move()
-
-        handle_collision(ball_instance, left_paddle, right_paddle)
-
-        if ball_instance.x < 0:
-            right_score += 1
-            ball_instance.reset()
-        elif ball_instance.x > constants.WINDOW_WIDTH:
-            left_score += 1
-            ball_instance.reset()
+        for ball in balls:
+            ball.move()
+            handle_collision(ball)
+        
+            if ball.x < 0:
+                right_score += 1
+                ball.reset()
+            elif ball.x > constants.WINDOW_WIDTH:
+                left_score += 1
+                ball.reset()
 
         won = False
 
@@ -199,11 +223,11 @@ def main():
             win_text = "Right Player Won!"
 
         if won:
-            draw(constants.WINDOW, [left_paddle, right_paddle], ball_instance, left_score, right_score)
+            draw()
 
             handle_player_win(win_text)
             
-            reset_game(left_score, right_score, ball_instance, left_paddle, right_paddle)
+            reset_game()
             
     pygame.quit()
 
