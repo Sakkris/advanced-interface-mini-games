@@ -1,0 +1,24 @@
+import pygame
+
+pygame.init()
+WINDOW_WIDTH, WINDOW_HEIGHT = 700, 500
+FPS = 60
+WHITE_COLOR = (255, 255, 255)
+BLACK_COLOR = (255, 0, 0)
+BACKGROUND_COLOR = (25, 25, 25)
+WINNING_SCORE = 3
+
+# MENU POSITIONS
+TITLE_POS = (200, 200)
+BUTTON_X = 200
+BUTTON_Y = 300
+
+# Difficulty
+DIFFICULTY = "hard"
+
+# WINDOW AND FONT STATIC VALUES
+DISPLAY = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+WINDOW = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+NORMAL_FONT = pygame.font.Font("visitor1.ttf", 48)
+TITLE_FONT = pygame.font.Font("visitor1.ttf", 120)
