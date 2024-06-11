@@ -217,7 +217,6 @@ class Match:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    break
 
             self.handle_input(cap, detector)
 

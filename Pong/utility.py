@@ -20,5 +20,15 @@ DIFFICULTY = "hard"
 DISPLAY = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
 WINDOW = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
+FONT_NAME = "visitor1.ttf"
 NORMAL_FONT = pygame.font.Font("visitor1.ttf", 48)
 TITLE_FONT = pygame.font.Font("visitor1.ttf", 120)
+
+
+# FUNCTIONS
+def draw_text(text, size, x, y):
+    font = pygame.font.Font(FONT_NAME, size)
+    text_surface = font.render(text, True, WHITE_COLOR)
+    text_rect = text_surface.get_rect()
+    text_rect.center = (x, y)
+    DISPLAY.blit(text_surface, text_rect)
