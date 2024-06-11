@@ -14,12 +14,14 @@ class Game:
     def __init__(self):
         self.isRunning, self.isPlaying = True, False
         self.main_menu = MainMenu(self)
-        self.settings_menu = None
-        self.mode_menu = None
+        self.settings_menu = SettingsMenu(self)
+        self.mode_menu = ModesMenu(self)
         self.current_menu = self.main_menu
         self.match = None
 
     def run(self):
         while self.isRunning:
+            while self.isRunning and self.match is not None:
+                self.match.start_match()
             self.current_menu.display_menu()
             # run game
