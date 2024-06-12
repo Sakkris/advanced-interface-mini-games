@@ -18,10 +18,17 @@ class Game:
         self.mode_menu = ModesMenu(self)
         self.current_menu = self.main_menu
         self.match = None
+        self.dificulty = None
 
     def run(self):
         while self.isRunning:
-            while self.isRunning and self.match is not None:
+            while self.isPlaying and self.match is not None:
                 self.match.start_match()
             self.current_menu.display_menu()
-            # run game
+
+    def read_game_settings(self, dificulty: str):
+        with io.open("game_settings.yaml", "r") as stream:
+            data = yaml.safe_load(stream)
+
+        dificulty_settings = data['dificulties'][dificulty]
+        return dificulty_settings

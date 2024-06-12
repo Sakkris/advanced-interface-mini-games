@@ -20,20 +20,14 @@ class Paddles:
 
 
 class Match:
-    def __init__(self, mode: str):
+    def __init__(self, game, mode: str):
         self.paddles: Paddles
         self.left_score = 0
         self.right_score = 0
         self.balls = []
         self.number_of_bounces = 0
         self.mode = mode
-
-    def read_game_settings(self, dificulty: str):
-        with io.open("game_settings.yaml", "r") as stream:
-            data = yaml.safe_load(stream)
-
-        dificulty_settings = data['dificulties'][dificulty]
-        return dificulty_settings
+        self.game = game
 
     def setup_game(self, dificulty_settings):
         left_paddle = Paddle(10, utility.WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH,
@@ -202,7 +196,12 @@ class Match:
             max_hands = 2
 
         detector = HandDetector(staticMode=False, maxHands=max_hands, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
-        dificulty_settings = self.read_game_settings(utility.DIFFICULTY)
+
+        if self.game.dificulty is not None:
+            dificulty_settings = self.game.dificulty
+        else:
+            dificulty_settings = self.game.read_game_settings("medium")
+
         self.setup_game(dificulty_settings)
 
         while True:
@@ -251,4 +250,5 @@ class Match:
             if won:
                 self.draw_match()
                 self.handle_player_win(win_text)
-                self.reset_game(dificulty_settings)
+                self.game.isPlaying = False
+                break
