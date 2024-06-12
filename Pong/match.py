@@ -88,11 +88,15 @@ class Match:
         if keys[pygame.K_s]:
             self.paddles.left.move(up=False)
 
-        if keys[pygame.K_UP]:
-            self.paddles.right.move(up=True)
+        if self.mode == "multi":
+            if keys[pygame.K_UP]:
+                self.paddles.right.move(up=True)
 
-        if keys[pygame.K_DOWN]:
-            self.paddles.right.move(up=False)
+            if keys[pygame.K_DOWN]:
+                self.paddles.right.move(up=False)
+        else:
+            # ai does stuff
+            return
 
     def handle_paddle_movement_hands(self, cap, detector):
         # hand detection (for now local with 2 hands)
@@ -111,10 +115,15 @@ class Match:
                 # check hand
                 if hand["type"] == "Left":
                     self.paddles.left.y = y
-                if hand["type"] == "Right":
-                    self.paddles.right.y = y
 
-        cv2.imshow("Hand Position Debug", img)
+                if self.mode == "multi":
+                    if hand["type"] == "Right":
+                        self.paddles.right.y = y
+                else:
+                    # ai does stuff
+                    return
+
+        #cv2.imshow("Hand Position Debug", img)
 
     def handle_paddle_movement(self, keys, cap, detector):
         self.handle_paddle_movement_hands(cap, detector)
@@ -170,6 +179,7 @@ class Match:
         utility.WINDOW_WIDTH // 2 - text.get_width() // 2, utility.WINDOW_HEIGHT // 2 - text.get_height() // 2))
 
         pygame.display.update()
+        #cv2.destroyAllWindows()
         pygame.time.delay(5000)
 
     def reset_game(self, dificulty_settings):
