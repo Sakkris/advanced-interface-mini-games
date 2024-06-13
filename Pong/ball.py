@@ -1,10 +1,8 @@
 import pygame
-import constants
-
-BALL_RADIUS = 7
+import utility
 
 class Ball:
-    COLOR = constants.WHITE_COLOR
+    COLOR = utility.WHITE_COLOR
 
     def __init__(self, x, y, radius, starting_speed, max_velocity, speed_modifier):
         self.x = self.original_x = x
@@ -28,7 +26,7 @@ class Ball:
         self.y = self.original_y
         self.y_velocity = 0
 
-        if (self.x_velocity < 0):
+        if self.x_velocity < 0:
             self.x_velocity = self.starting_speed
         else:
             self.x_velocity = -self.starting_speed
@@ -36,12 +34,12 @@ class Ball:
     def increase_speed(self):
         is_negative = False
 
-        if (self.x_velocity < 0):
+        if self.x_velocity < 0:
             is_negative = True
             self.x_velocity *= -1
 
-        if (self.x_velocity < self.max_velocity):
+        if self.x_velocity < self.max_velocity:
             self.x_velocity += self.speed_modifier
 
-        if (is_negative):
+        if is_negative:
             self.x_velocity *= -1

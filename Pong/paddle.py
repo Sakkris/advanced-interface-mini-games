@@ -1,10 +1,8 @@
 import pygame
-import constants
-
-PADDLE_WIDTH, PADDLE_HEIGHT = 20, 100
+import utility
 
 class Paddle:
-    COLOR = constants.WHITE_COLOR
+    COLOR = utility.WHITE_COLOR
 
     def __init__(self, x, y, width, height, speed):
         self.x = self.original_x = x 
@@ -19,7 +17,7 @@ class Paddle:
     def move(self, up=True):
         if up and (self.y - self.speed >= 0):
             self.y -= self.speed
-        elif not up and (self.y + self.speed + self.height <= constants.WINDOW_HEIGHT):
+        elif not up and (self.y + self.speed + self.height <= utility.WINDOW_HEIGHT):
             self.y += self.speed
 
     def reset(self):
