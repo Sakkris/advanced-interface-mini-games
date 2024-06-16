@@ -51,7 +51,8 @@ class MainMenu(Menu):
         self.state = "Modes"
         self.modes_x, self.modes_y = self.mid_w, self.mid_h + 20
         self.settings_x, self.settings_y = self.mid_w, self.mid_h + 60
-        self.quit_x, self.quit_y = self.mid_w, self.mid_h + 100
+        self.manual_x, self.manual_y = self.mid_w, self.mid_h + 100
+        self.quit_x, self.quit_y = self.mid_w, self.mid_h + 140
         self.cursor_rect.midtop = (self.modes_x + self.offset, self.modes_y)
 
     def display_menu(self):
@@ -60,9 +61,13 @@ class MainMenu(Menu):
             self.check_events()
             self.check_input()
             utility.DISPLAY.fill(utility.BACKGROUND_COLOR)
+            utility.draw_text("Go up: W Key", 14, 55, 20, False)
+            utility.draw_text("Go down: S Key", 14, 63, 34, False)
+            utility.draw_text("Select: Space Key", 14, 75, 48, False)
             utility.draw_text('PONG', 120, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2 - 80, False)
             utility.draw_text("Modes", 30, self.modes_x, self.modes_y, False)
             utility.draw_text("Diff", 30, self.settings_x, self.settings_y, False)
+            utility.draw_text("Controls", 30, self.manual_x, self.manual_y, False)
             utility.draw_text("Quit", 30, self.quit_x, self.quit_y, False)
             self.draw_cursor()
             self.blit_screen()
@@ -81,15 +86,21 @@ class MainMenu(Menu):
             elif self.state == "Settings":
                 self.cursor_rect.midtop = (self.modes_x + self.offset, self.modes_y)
                 self.state = "Modes"
-            elif self.state == "Quit":
+            elif self.state == "Manual":
                 self.cursor_rect.midtop = (self.settings_x + self.offset, self.settings_y)
                 self.state = "Settings"
+            elif self.state == "Quit":
+                self.cursor_rect.midtop = (self.manual_x + self.offset, self.manual_y)
+                self.state = "Manual"
 
         if self.down:
             if self.state == "Modes":
                 self.cursor_rect.midtop = (self.settings_x + self.offset, self.settings_y)
                 self.state = "Settings"
             elif self.state == "Settings":
+                self.cursor_rect.midtop = (self.manual_x + self.offset, self.manual_y)
+                self.state = "Manual"
+            elif self.state == "Manual":
                 self.cursor_rect.midtop = (self.quit_x + self.offset, self.quit_y)
                 self.state = "Quit"
             elif self.state == "Quit":
@@ -101,6 +112,8 @@ class MainMenu(Menu):
             pygame.quit()
         elif self.state == "Settings":
             self.game.current_menu = self.game.settings_menu
+        elif self.state == "Manual":
+            self.game.current_menu = self.game.manual_menu
         elif self.state == "Modes":
             self.game.current_menu = self.game.mode_menu
         self.run_display = False
@@ -122,6 +135,9 @@ class SettingsMenu(Menu):
             self.check_events()
             self.check_input()
             utility.DISPLAY.fill(utility.BACKGROUND_COLOR)
+            utility.draw_text("Go up: W Key", 14, 55, 20, False)
+            utility.draw_text("Go down: S Key", 14, 63, 34, False)
+            utility.draw_text("Select: Space Key", 14, 75, 48, False)
             utility.draw_text('Diff', 120, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2 - 80, False)
 
             if self.chosen_diff == "easy":
@@ -208,6 +224,9 @@ class ModesMenu(Menu):
             self.check_events()
             self.check_input()
             utility.DISPLAY.fill(utility.BACKGROUND_COLOR)
+            utility.draw_text("Go up: W Key", 14, 55, 20, False)
+            utility.draw_text("Go down: S Key", 14, 63, 34, False)
+            utility.draw_text("Select: Space Key", 14, 75, 48, False)
             utility.draw_text('Modes', 120, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2 - 80, False)
             utility.draw_text("P1 V AI", 30, self.single_x, self.single_y, False)
             utility.draw_text("P1 VS P2", 30, self.multi_x, self.multi_y, False)
@@ -255,4 +274,41 @@ class ModesMenu(Menu):
             self.game.current_menu = self.game.main_menu
             self.game.match = Match(self.game, "multi")
             self.game.isPlaying = True
+        self.run_display = False
+
+
+class ManualMenu(Menu):
+    def __init__(self, game):
+        Menu.__init__(self, game)
+        self.state = "Back"
+        self.back_x, self.back_y = self.mid_w, utility.WINDOW_HEIGHT - 100
+        self.cursor_rect.midtop = (self.back_x + self.offset, self.back_y)
+
+    def display_menu(self):
+        self.run_display = True
+        while self.run_display:
+            self.check_events()
+            self.check_input()
+            utility.DISPLAY.fill(utility.BACKGROUND_COLOR)
+            utility.draw_text("Go up: W Key", 14, 55, 20, False)
+            utility.draw_text("Go down: S Key", 14, 63, 34, False)
+            utility.draw_text("Select: Space Key", 14, 75, 48, False)
+            utility.draw_text('Controls', 120, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2 - 80, False)
+            utility.draw_text('Move up paddle: P1 - W, P2 - UP',
+                              20, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2, False)
+            utility.draw_text('Move down paddle: P1 - S, P2 - Down',
+                              20, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2 + 40, False)
+            utility.draw_text('Or Use your hands to guide the paddles!',
+                              20, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT / 2 + 80, False)
+            utility.draw_text("Back", 30, utility.WINDOW_WIDTH / 2, utility.WINDOW_HEIGHT - 100, False)
+            self.draw_cursor()
+            self.blit_screen()
+
+    def check_input(self):
+        if self.select:
+            self.change_state()
+
+    def change_state(self):
+        if self.state == "Back":
+            self.game.current_menu = self.game.main_menu
         self.run_display = False
