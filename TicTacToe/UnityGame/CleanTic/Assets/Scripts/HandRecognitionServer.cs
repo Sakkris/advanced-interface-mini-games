@@ -1,23 +1,21 @@
 using System;
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using UnityEditor.PackageManager.UI;
+using WebSocketSharp;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
-using UnityEngine.UI;
+using Newtonsoft.Json.Linq;
+using WebSocketSharp.Server;
+using JetBrains.Annotations;
 
 public class HandRecognitionServer : MonoBehaviour
 {
-    // Variables for the TCP server
-    private TcpListener server;
-    private Thread serverThread;
+    public static HandRecognitionServer Instance { get; private set; }
+
+    // Variable for the WebSocket
+    private WebSocketServer wss;
 
     // Variables to keep the last info given by Pitão
-    private Vector2 fingerPosition = new Vector2(0,0);
+    private Vector2 fingerPosition = new Vector2(0, 0);
     private string gesture;
     private bool isRightHandDetected = false;
     private bool isLeftHandDetected = false;
@@ -28,12 +26,20 @@ public class HandRecognitionServer : MonoBehaviour
     private float clickTimer = 0f;
     private bool clickTimerLockedOut = false;
 
+    private void Awake()
+    {
+        Instance = this;
+
+        clickTimer = clickTimerCooldown;
+    }
+
     private void Start()
     {
-        clickTimer = clickTimerCooldown;
+        wss = new WebSocketServer("ws://localhost:1313");
+        wss.AddWebSocketService<HandRecognitionSocketBehavior>("/HandTracking");
+        wss.Start();
 
-        serverThread = new Thread(StartServer);
-        serverThread.Start();
+        Debug.Log("WebSocket server started on ws://localhost:1313");
     }
 
     private void Update()
@@ -46,7 +52,8 @@ public class HandRecognitionServer : MonoBehaviour
 
             virtualMouse.anchoredPosition = cursorPosition;
             Mouse.current.WarpCursorPosition(cursorPosition);
-        } else
+        }
+        else
         {
             // If right hand is not detected, make the cursor game object follow the real mouse
             virtualMouse.anchoredPosition = Input.mousePosition;
@@ -78,56 +85,39 @@ public class HandRecognitionServer : MonoBehaviour
         }
     }
 
-    private void StartServer()
+    public void ParseData(Vector2 fingerPositionVector, string gestureString, bool rightHandDetected, bool leftHandDetected)
     {
-        server = new TcpListener(IPAddress.Any, 1313);
-        server.Start();
-        Debug.Log("Server started, waiting for connections...");
-
-        while (true)
-        {
-            try
-            {
-                TcpClient client = server.AcceptTcpClient();
-                Debug.Log("Client connected");
-
-                NetworkStream stream = client.GetStream();
-
-                byte[] buffer = new byte[1024];
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                string data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-
-                var gestureData = JsonUtility.FromJson<GestureData>(data);
-                
-                fingerPosition = new Vector2(gestureData.x, gestureData.y);
-                gesture = gestureData.gesture;
-                isRightHandDetected = gestureData.right_hand_detected;
-                isLeftHandDetected = gestureData.left_hand_detected;
-
-                client.Close();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Server exception: {e}");
-            }
-        }
+        fingerPosition = fingerPositionVector;
+        gesture = gestureString;
+        isRightHandDetected = rightHandDetected;
+        isLeftHandDetected = leftHandDetected;
     }
 
-    public void OnApplicationQuit()
+    private void OnDestroy()
     {
-        server.Stop();
-        serverThread.Abort();
+        if (wss != null)
+        {
+            wss.Stop();
+        }
     }
 }
 
-[Serializable]
-public class GestureData
+public class HandRecognitionSocketBehavior : WebSocketBehavior
 {
-    public float x;
-    public float y;
-    public string gesture;
-    public bool right_hand_detected;
-    public bool left_hand_detected;
+    protected override void OnMessage(MessageEventArgs e)
+    {
+        JObject data = JObject.Parse(e.Data);
+
+        Vector2 fingerPositionVector = new Vector2(data["x"].Value<float>(), data["y"].Value<float>());
+        string gestureString = data["gesture"].ToString();
+        bool rightHandDetected = data["right_hand_detected"].Value<bool>();
+        bool leftHandDetected = data["left_hand_detected"].Value<bool>();
+
+        Debug.Log($"Received data: {data}");
+
+        // Process hand tracking data
+        HandRecognitionServer.Instance.ParseData(fingerPositionVector, gestureString, rightHandDetected, leftHandDetected);
+    }
 }
 
 
