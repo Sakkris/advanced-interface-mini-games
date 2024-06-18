@@ -17,7 +17,7 @@ class Paddle:
     def move(self, up=True):
         if up and (self.y - self.speed >= 0):
             self.y -= self.speed
-        elif not up and (self.y + self.speed + self.height <= utility.WINDOW_HEIGHT):
+        elif not up and (self.y + self.speed + self.height <= utility.WINDOW_HEIGHT + utility.BOTTOM_OFFSET):
             self.y += self.speed
 
     def reset(self):

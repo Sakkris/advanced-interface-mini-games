@@ -16,6 +16,7 @@ class Game:
         self.main_menu = MainMenu(self)
         self.settings_menu = SettingsMenu(self)
         self.mode_menu = ModesMenu(self)
+        self.manual_menu = ManualMenu(self)
         self.current_menu = self.main_menu
         self.match = None
         self.dificulty = None
