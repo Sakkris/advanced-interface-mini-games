@@ -31,18 +31,18 @@ class Match:
         self.game = game
 
     def setup_game(self, dificulty_settings):
-        left_paddle = Paddle(10, utility.WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH,
-                             PADDLE_HEIGHT, dificulty_settings['paddle_speed'])
+        left_paddle = Paddle(10, utility.WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2 - utility.BOTTOM_OFFSET // 2,
+                             PADDLE_WIDTH, PADDLE_HEIGHT, dificulty_settings['paddle_speed'])
 
         right_paddle = Paddle(utility.WINDOW_WIDTH - 10 - PADDLE_WIDTH,
-                              utility.WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH,
-                              PADDLE_HEIGHT, dificulty_settings['paddle_speed'])
+                              utility.WINDOW_HEIGHT // 2 - PADDLE_HEIGHT // 2 - utility.BOTTOM_OFFSET // 2,
+                              PADDLE_WIDTH, PADDLE_HEIGHT, dificulty_settings['paddle_speed'])
 
         self.paddles = Paddles(left=left_paddle, right=right_paddle)
 
-        ball_instance = Ball(utility.WINDOW_WIDTH // 2, utility.WINDOW_HEIGHT // 2, BALL_RADIUS,
-                             dificulty_settings['ball_starting_speed'], dificulty_settings['ball_max_speed'],
-                             dificulty_settings['ball_speed_modifier'])
+        ball_instance = Ball(utility.WINDOW_WIDTH // 2, utility.WINDOW_HEIGHT // 2 - utility.BOTTOM_OFFSET // 2,
+                             BALL_RADIUS, dificulty_settings['ball_starting_speed'],
+                             dificulty_settings['ball_max_speed'], dificulty_settings['ball_speed_modifier'])
 
         self.balls.append(ball_instance)
 
@@ -106,10 +106,11 @@ class Match:
                 min_dist = self.paddles.right.x - ball.x
                 ind = i
 
-        if self.paddles.right.y - miss_offset < self.balls[ind].y:
-            return 1
-        if self.paddles.right.y + miss_offset > self.balls[ind].y:
+        # verify paddle position with the nearest ball position
+        if (self.paddles.right.y + self.paddles.right.height) + miss_offset < self.balls[ind].y:
             return 2
+        if self.paddles.right.y - miss_offset > self.balls[ind].y:
+            return 1
         return 0
 
     def handle_paddle_movement_keyboard(self, keys):
