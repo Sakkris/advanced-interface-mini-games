@@ -1,8 +1,16 @@
 import pygame
 import utility
 from match import *
+import os
 
 pygame.init()
+pygame.mixer.init()
+
+navigationSound = pygame.mixer.Sound(os.path.join(utility.SOUND_FOLDER, 'buttonNav.mp3'))
+navigationSound.set_volume(0.1)
+
+selectSound = pygame.mixer.Sound(os.path.join(utility.SOUND_FOLDER, 'buttonSelect.mp3'))
+selectSound.set_volume(0.1)
 
 
 # Menus display buttons for the players to navigate with
@@ -74,8 +82,10 @@ class MainMenu(Menu):
 
     def check_input(self):
         if self.select:
+            pygame.mixer.Sound.play(selectSound)
             self.change_state()
         if self.up or self.down:
+            pygame.mixer.Sound.play(navigationSound)
             self.move_cursor()
 
     def move_cursor(self):
@@ -161,8 +171,10 @@ class SettingsMenu(Menu):
 
     def check_input(self):
         if self.select:
+            pygame.mixer.Sound.play(selectSound)
             self.change_state()
         if self.up or self.down:
+            pygame.mixer.Sound.play(navigationSound)
             self.move_cursor()
 
     def move_cursor(self):
@@ -236,8 +248,10 @@ class ModesMenu(Menu):
 
     def check_input(self):
         if self.select:
+            pygame.mixer.Sound.play(selectSound)
             self.change_state()
         if self.up or self.down:
+            pygame.mixer.Sound.play(navigationSound)
             self.move_cursor()
 
     def move_cursor(self):
@@ -306,6 +320,7 @@ class ManualMenu(Menu):
 
     def check_input(self):
         if self.select:
+            pygame.mixer.Sound.play(selectSound)
             self.change_state()
 
     def change_state(self):

@@ -7,8 +7,17 @@ import utility
 from paddle import Paddle
 from ball import Ball
 import numpy as np
+import os
 import yaml
 import io
+
+pygame.mixer.init()
+
+paddleSound = pygame.mixer.Sound(os.path.join(utility.SOUND_FOLDER, 'paddleCollision.mp3'))
+paddleSound.set_volume(0.1)
+
+pointSound = pygame.mixer.Sound(os.path.join(utility.SOUND_FOLDER, 'pointScore.mp3'))
+pointSound.set_volume(0.1)
 
 PADDLE_WIDTH, PADDLE_HEIGHT = 20, 100
 BALL_RADIUS = 7
@@ -92,11 +101,11 @@ class Match:
     def ai_plays(self):
         miss_offset = 0
         if self.game.dificulty == "easy":
-            miss_offset += 8
-        if self.game.dificulty == "medium":
             miss_offset += 6
-        if self.game.dificulty == "hard":
+        if self.game.dificulty == "medium":
             miss_offset += 4
+        if self.game.dificulty == "hard":
+            miss_offset += 2
 
         # find nearest ball
         min_dist = utility.WINDOW_WIDTH
@@ -172,6 +181,7 @@ class Match:
         self.handle_paddle_movement(keys, cap, detector)
 
     def ball_collided_with_paddle(self, ball_instance: Ball, paddle_instance):
+        pygame.mixer.Sound.play(paddleSound)
         self.number_of_bounces += 1
 
         ball_instance.x_velocity *= -1
@@ -269,6 +279,7 @@ class Match:
                 self.handle_collision(ball)
 
                 if ball.x < 0:
+                    pygame.mixer.Sound.play(pointSound)
                     self.right_score += 1
 
                     if len(self.balls) > 1:
@@ -276,6 +287,7 @@ class Match:
                     else:
                         ball.reset()
                 elif ball.x > utility.WINDOW_WIDTH:
+                    pygame.mixer.Sound.play(pointSound)
                     self.left_score += 1
 
                     if len(self.balls) > 1:
