@@ -1,9 +1,14 @@
 import pygame
+import os
+import utility
 from menu import *
 from match import Match
 
 pygame.init()
+pygame.mixer.init()
 pygame.display.set_caption("Pong")
+
+pygame.mixer.music.load(os.path.join(utility.SOUND_FOLDER, 'ambientMusic.mp3'))
 
 
 # Game class is responsible for managing Menus and matches
@@ -22,6 +27,8 @@ class Game:
         self.dificulty = None
 
     def run(self):
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.15)
         while self.isRunning:
             while self.isPlaying and self.match is not None:
                 self.match.start_match()
